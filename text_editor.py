@@ -100,7 +100,7 @@ class text_editor(tkinter.Tk):
     def exit_editor(self):
         self.destroy()
         
-#instantiate an text_editor 
+#instantiate a text_editor 
 editor1 = text_editor()
 editor1.geometry("800x600")
 
