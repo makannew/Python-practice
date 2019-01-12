@@ -18,6 +18,8 @@ class text_editor(tkinter.Tk):
             self.start_up_file=""
         #initialize tkinter toplevel base
         tkinter.Tk.__init__(self, *args, **kwargs)
+        #handle closing window by user
+        self.protocol("WM_DELETE_WINDOW",self.exit_editor)
         #Do other things after tkinter.TK initialization
         main_frame = tkinter.Frame(self) 
         main_frame.grid(column=0,row=0,sticky="nsew")
@@ -36,14 +38,33 @@ class text_editor(tkinter.Tk):
         self.menu_bar=tkinter.Menu(self)
         self["menu"]=self.menu_bar
         self.menu_file=tkinter.Menu(self.menu_bar,tearoff=0)
-        menu_edit=tkinter.Menu(self.menu_bar,tearoff=0)
+        self.menu_edit=tkinter.Menu(self.menu_bar,tearoff=0,postcommand=self.refresh_edit_states)
         self.menu_bar.add_cascade(menu=self.menu_file,label="File")
-        self.menu_bar.add_cascade(menu=menu_edit,label="Edit")
+        self.menu_bar.add_cascade(menu=self.menu_edit,label="Edit")
         #create menu items
         self.menu_file.add_command(label="Open", command=self.open_file)
         self.menu_file.add_command(label="Save",command=self.save_file)
         self.menu_file.add_command(label="Save As...",command=self.save_as)
         self.menu_file.add_command(label="Exit",command=self.exit_editor)
+        self.menu_edit.add_command(label="Copy",state="disabled",command=self.copy_text)
+        self.menu_edit.add_command(label="Cut",state="disabled",command=self.cut_text)
+        self.menu_edit.add_command(label="Paste",state="disabled",command=self.paste_text)
+        #create right-click menue
+        self.rclick_menu=tkinter.Menu(self,tearoff=0,postcommand=self.refresh_edit_states)
+        self.rclick_menu.add_command(label="Copy",state="disabled",command=self.copy_text)
+        self.rclick_menu.add_command(label="Cut",state="disabled",command=self.cut_text)
+        self.rclick_menu.add_command(label="Paste",state="disabled",command=self.paste_text)
+
+        
+        #popup right-click menu according operation system
+        if (self.tk.call('tk', 'windowingsystem')=='aqua'):
+            #keep it cross-platform
+            self.text_box.bind("<2>",lambda e:self.rclick_menu.post(e.x_root,e.y_root))
+            self.text_box.bind("<Control-1>",lambda e:self.rclick_menu.post(e.x_root,e.y_root))
+        else:
+            self.text_box.bind("<3>",lambda e:self.rclick_menu.post(e.x_root,e.y_root))
+            
+        
         #preload default filename of file
         if (self.start_up_file==""):
             self.filename="untitled.txt"
@@ -57,7 +78,41 @@ class text_editor(tkinter.Tk):
             else:
                 self.instant_save=False
                 self.filename="untitled.txt"
-                
+    def refresh_edit_states(self):
+        if(type(self.clipboard_get()) is str):
+            self.rclick_menu.entryconfig("Paste",state="normal")
+            self.menu_edit.entryconfig("Paste",state="normal")
+        else:
+            self.rclick_menu.entryconfig("Paste",state="disabled")
+            self.menu_edit.entryconfig("Paste",state="disabled")
+            
+        try:
+            self.text_box.selection_get()
+            self.rclick_menu.entryconfig("Copy",state="normal")
+            self.menu_edit.entryconfig("Copy",state="normal")
+            self.rclick_menu.entryconfig("Cut",state="normal")
+            self.menu_edit.entryconfig("Cut",state="normal")
+        except:
+            self.rclick_menu.entryconfig("Copy",state="disabled")
+            self.menu_edit.entryconfig("Copy",state="disabled")
+            self.rclick_menu.entryconfig("Cut",state="disabled")
+            self.menu_edit.entryconfig("Cut",state="disabled")
+        
+    def copy_text(self):
+        self.clipboard_clear()
+        self.clipboard_append(self.text_box.selection_get())
+    
+    def paste_text(self):
+        try:
+            self.text_box.delete("sel.first","sel.last")
+        except:
+            pass
+        self.text_box.insert("insert",self.clipboard_get())
+    
+    def cut_text(self):
+        self.copy_text()
+        self.text_box.delete("sel.first","sel.last")
+           
     def open_file(self):
         filename=tkinter.filedialog.askopenfilename()
         self.read_file(filename)
@@ -82,10 +137,11 @@ class text_editor(tkinter.Tk):
             return False
     def save_as(self):
         filename=tkinter.filedialog.asksaveasfile(mode="w",initialfile=self.filename,defaultextension="txt")
-        if (filename.name==""):
-            return
-        self.filename=filename.name
-        self.save_file()
+        try:
+            self.filename=filename.name
+            self.save_file()
+        except:
+            pass
         return
     def save_file(self):
 
@@ -98,6 +154,7 @@ class text_editor(tkinter.Tk):
             tkinter.messagebox.showerror(parent=self,title="Error",message="Error while trying to save the file")
        
     def exit_editor(self):
+        print("by by...")
         self.destroy()
         
 #instantiate an text_editor 
