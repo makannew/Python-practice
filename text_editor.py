@@ -157,7 +157,7 @@ class text_editor(tkinter.Tk):
         print("by by...")
         self.destroy()
         
-#instantiate an text_editor 
+#instantiate a text_editor 
 editor1 = text_editor()
 editor1.geometry("800x600")
 
