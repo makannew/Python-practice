@@ -23,12 +23,15 @@ class text_editor(tkinter.Tk):
         #Do other things after tkinter.TK initialization
         main_frame = tkinter.Frame(self) 
         main_frame.grid(column=0,row=0,sticky="nsew")
-        #text editing area inside main_frame
-        self.text_box = tkinter.Text(main_frame, wrap="word", yscrollcommand=True,padx=5,pady=5)
-        self.text_box.grid(column=0,row=0,sticky="nsew")
         #scrolling widget for text_box
-        sbar=tkinter.Scrollbar(main_frame,command=self.text_box.yview)
-        sbar.grid(column=1,row=0,sticky="ns")
+        self.sbar=tkinter.Scrollbar(main_frame)
+        self.sbar.grid(column=1,row=0,sticky="ns")
+        #text editing area inside main_frame
+        self.text_box = tkinter.Text(main_frame, wrap="word", yscrollcommand=self.sbar.set,padx=5,pady=5)
+        self.text_box.grid(column=0,row=0,sticky="nsew")
+        #config scrollbar after text_box instantiation
+        self.sbar.config(command=self.text_box.yview)
+
         #allow resizing 
         self.columnconfigure(0,weight=1)
         self.rowconfigure(0,weight=1)
@@ -79,13 +82,16 @@ class text_editor(tkinter.Tk):
                 self.instant_save=False
                 self.filename="untitled.txt"
     def refresh_edit_states(self):
-        if(type(self.clipboard_get()) is str):
-            self.rclick_menu.entryconfig("Paste",state="normal")
-            self.menu_edit.entryconfig("Paste",state="normal")
-        else:
-            self.rclick_menu.entryconfig("Paste",state="disabled")
-            self.menu_edit.entryconfig("Paste",state="disabled")
-            
+        try:
+            if(self.clipboard_get()!=""):
+                self.rclick_menu.entryconfig("Paste",state="normal")
+                self.menu_edit.entryconfig("Paste",state="normal")
+            else:
+                self.rclick_menu.entryconfig("Paste",state="disabled")
+                self.menu_edit.entryconfig("Paste",state="disabled")
+        except:
+                self.rclick_menu.entryconfig("Paste",state="disabled")
+                self.menu_edit.entryconfig("Paste",state="disabled")            
         try:
             self.text_box.selection_get()
             self.rclick_menu.entryconfig("Copy",state="normal")
@@ -154,14 +160,48 @@ class text_editor(tkinter.Tk):
             tkinter.messagebox.showerror(parent=self,title="Error",message="Error while trying to save the file")
        
     def exit_editor(self):
-        print("by by...")
-        self.destroy()
+        if (self.text_box.get("1.0","end-1c")==""):
+            self.destroy()
+            return
+        try:
+            file=open(self.filename,"r")
+            if(file.read()==self.text_box.get("1.0","end-1c")):
+               file.close
+               self.destroy()
+               return
+        except:
+            pass
+        save_on_close = tkinter.messagebox.askyesnocancel(message="Do you want save changes?",)
+        if (save_on_close==False):
+            self.destroy()
+            return
+        elif(save_on_close==None):
+            return
+        else:
+            if(self.menu_file.entrycget("Save","state")=="normal"):
+                try:
+                    self.save_file()
+                    self.destroy()
+                    return
+                except:
+                    return
+            else:
+                try:
+                    self.save_as()
+                    if(self.instant_save):
+                        self.destroy()
+                        return
+                    else:
+                        return
+                except:
+                    return
+            return
         
-#instantiate a text_editor 
-editor1 = text_editor()
-editor1.geometry("800x600")
-
-editor1.mainloop()
+#instantiate a text_editor and load a file
+if (__name__=="__main__"):
+    editor1 = text_editor(filename="readme.md")
+    editor1.geometry("800x600")
+    editor1.mainloop()
 
         
         
