@@ -16,4 +16,5 @@ This repo is compiled by [Makan Edrisi](https://github.com/makannew)
 
 ### [Text Editor](https://github.com/makannew/Python-practice/blob/master/text_editor.py)
 Using python built-in GUI (tkinter) to make a simple text editor.
+
 ![Editor](Images/text_editor.jpg)
